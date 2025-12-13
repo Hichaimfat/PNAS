@@ -8,6 +8,7 @@ services:
     envVars:
       - key: DATABASE_URL
         value: sqlite:///./pnas_prod.db
+    plan: free
     region: frankfurt
 
   # Frontend (Next.js)
@@ -22,6 +23,7 @@ services:
           type: web
           name: pnas-api
           property: host
+    plan: free
     region: frankfurt
 
   # Worker for Scraper (Optional: Chron Job)

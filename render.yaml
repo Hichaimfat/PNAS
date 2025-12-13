@@ -26,13 +26,4 @@ services:
     plan: free
     region: frankfurt
 
-  # Worker for Scraper (Optional: Chron Job)
-  # - type: cron
-  #   name: pnas-scraper
-  #   env: python
-  #   schedule: "0 0 * * *"
-  #   buildCommand: pip install -r backend/requirements.txt
-  #   startCommand: cd scraping && scrapy crawl medecins
-  #   envVars:
-  #     - key: DATABASE_URL
-  #       value: sqlite:///./pnas_prod.db
+

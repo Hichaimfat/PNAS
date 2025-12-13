@@ -5,3 +5,6 @@ alembic
 psycopg2-binary
 asyncpg
 python-dotenv
+apscheduler
+scrapy
+crochet

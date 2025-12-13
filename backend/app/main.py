@@ -71,3 +71,42 @@ def search_medecins(
     
     results = session.exec(query).all()
     return results
+
+# Scheduler Configuration for Automatic Scraping
+from apscheduler.schedulers.background import BackgroundScheduler
+import subprocess
+import os
+import logging
+
+logger = logging.getLogger("uvicorn")
+
+def run_scraper():
+    logger.info("Starting scheduled scraper job...")
+    try:
+        # Determine paths
+        # Assuming run from root (Render)
+        cwd = os.getcwd()
+        scraping_dir = os.path.join(cwd, "scraping")
+        
+        # Fallback for local dev if running from backend folder
+        if not os.path.exists(scraping_dir):
+            scraping_dir = os.path.join(cwd, "..", "scraping")
+            
+        if os.path.exists(scraping_dir):
+            # Run scrapy as a subprocess
+            subprocess.Popen(["scrapy", "crawl", "medecins"], cwd=scraping_dir)
+            logger.info(f"Scraper triggered in {scraping_dir}")
+        else:
+            logger.error("Scraping directory not found.")
+    except Exception as e:
+        logger.error(f"Failed to run scraper: {e}")
+
+@app.on_event("startup")
+def start_scheduler():
+    scheduler = BackgroundScheduler()
+    # Run every 24 hours
+    scheduler.add_job(run_scraper, 'interval', hours=24)
+    # Also run once shortly after startup (e.g., 10 seconds later, or immediately)
+    scheduler.add_job(run_scraper, 'date', run_date=None) # run_date=None -> now
+    scheduler.start()
+    logger.info("Scheduler started. Scraper will run daily and on startup.")

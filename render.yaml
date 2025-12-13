@@ -23,7 +23,7 @@ services:
         fromService:
           type: web
           name: pnas-api
-          property: url
+          property: host
     region: frankfurt
 
   # Worker for Scraper (Optional: Chron Job)

@@ -33,7 +33,10 @@ export default function Home() {
             if (filters.q) params.append("q", filters.q);
 
             // In production, use environment variable for API URL
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            let apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            if (!apiUrl.startsWith('http')) {
+                apiUrl = `https://${apiUrl}`;
+            }
             const res = await fetch(`${apiUrl}/api/medecins/recherche?${params.toString()}`);
             if (res.ok) {
                 const data = await res.json();

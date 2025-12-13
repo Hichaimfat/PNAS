@@ -7,9 +7,7 @@ services:
     startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port 10000
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: pnas-db
-          property: connectionString
+        value: sqlite:///./pnas_prod.db
     region: frankfurt
 
   # Frontend (Next.js)
@@ -35,12 +33,4 @@ services:
   #   startCommand: cd scraping && scrapy crawl medecins
   #   envVars:
   #     - key: DATABASE_URL
-  #       fromDatabase:
-  #         name: pnas-db
-  #         property: connectionString
-
-databases:
-  - name: pnas-db
-    databaseName: pnas_db
-    user: pnas_user
-    region: frankfurt
+  #       value: sqlite:///./pnas_prod.db

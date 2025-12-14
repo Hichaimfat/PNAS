@@ -73,18 +73,27 @@ def search_medecins(
     return results
 
 # Scheduler Configuration for Automatic Scraping
-from apscheduler.schedulers.background import BackgroundScheduler
+# On Vercel (Serverless), we cannot use BackgroundScheduler as the instance freezes/dies.
+# We use Vercel Cron to call an endpoint instead.
 import subprocess
 import os
 import logging
+from fastapi import Header, HTTPException
 
 logger = logging.getLogger("uvicorn")
 
-def run_scraper():
-    logger.info("Starting scheduled scraper job...")
+@app.get("/api/trigger-scrape")
+def trigger_scrape(authorization: Optional[str] = Header(None)):
+    # Simple security check (Authorization: Bearer <CRON_SECRET>)
+    # For now, we'll just log it. In prod, set CRON_SECRET env var.
+    cron_secret = os.getenv("CRON_SECRET")
+    if cron_secret and authorization != f"Bearer {cron_secret}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    logger.info("Triggering scraper job via API...")
     try:
         # Determine paths
-        # Assuming run from root (Render)
+        # Assuming run from root (Render/Vercel)
         cwd = os.getcwd()
         scraping_dir = os.path.join(cwd, "scraping")
         
@@ -94,19 +103,49 @@ def run_scraper():
             
         if os.path.exists(scraping_dir):
             # Run scrapy as a subprocess
+            # Note: In pure serverless, subprocess might be limited. 
+            # Ideally, scraping should be a separate service or Cloud Run job.
+            # But for Vercel, we can try running it if it fits within timeout (10s-60s).
+            # If it takes too long, it will timeout.
+            # A better approach for Vercel is to keep this simple or assume it runs fast.
             subprocess.Popen(["scrapy", "crawl", "medecins"], cwd=scraping_dir)
-            logger.info(f"Scraper triggered in {scraping_dir}")
+            return {"message": "Scraper triggered successfully"}
         else:
             logger.error("Scraping directory not found.")
+            return {"error": "Scraping directory not found"}, 500
     except Exception as e:
         logger.error(f"Failed to run scraper: {e}")
+        return {"error": str(e)}, 500
 
-@app.on_event("startup")
-def start_scheduler():
-    scheduler = BackgroundScheduler()
-    # Run every 24 hours
-    scheduler.add_job(run_scraper, 'interval', hours=24)
-    # Also run once shortly after startup (e.g., 10 seconds later, or immediately)
-    scheduler.add_job(run_scraper, 'date', run_date=None) # run_date=None -> now
-    scheduler.start()
-    logger.info("Scheduler started. Scraper will run daily and on startup.")
+# Migration route (Helper for running migrations from Vercel)
+from alembic.config import Config
+from alembic import command as alembic_command
+import io
+from contextlib import redirect_stdout
+
+@app.get("/api/run-migrations")
+def run_migrations(authorization: Optional[str] = Header(None)):
+    # Security check
+    cron_secret = os.getenv("CRON_SECRET")
+    if cron_secret and authorization != f"Bearer {cron_secret}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    logger.info("Running migrations via API...")
+    try:
+        # Capture output
+        output_buffer = io.StringIO()
+        with redirect_stdout(output_buffer):
+            # Get paths
+            base_dir = os.path.dirname(os.path.abspath(__file__))  # app/
+            backend_dir = os.path.dirname(base_dir)  # backend/
+            ini_path = os.path.join(backend_dir, "alembic.ini")
+            
+            alembic_cfg = Config(ini_path)
+            alembic_cfg.set_main_option("script_location", os.path.join(backend_dir, "migrations"))
+            
+            alembic_command.upgrade(alembic_cfg, "head")
+            
+        return {"message": "Migrations successful", "output": output_buffer.getvalue()}
+    except Exception as e:
+        logger.error(f"Migration failed: {e}")
+        return {"error": str(e)}, 500

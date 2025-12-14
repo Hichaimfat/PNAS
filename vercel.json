@@ -1,0 +1,15 @@
+{
+    "version": 2,
+    "rewrites": [
+        {
+            "source": "/api/(.*)",
+            "destination": "/backend/app/main.py"
+        }
+    ],
+    "crons": [
+        {
+            "path": "/api/trigger-scrape",
+            "schedule": "0 0 * * *"
+        }
+    ]
+}

@@ -9,18 +9,17 @@
         "lint": "next lint"
     },
     "dependencies": {
+        "@vercel/postgres": "^0.5.1",
         "clsx": "^2.1.0",
         "lucide-react": "^0.330.0",
         "next": "14.1.0",
         "next-intl": "^4.6.0",
-        "pg": "^8.11.3",
         "react": "^18",
         "react-dom": "^18",
         "tailwind-merge": "^2.2.1"
     },
     "devDependencies": {
         "@types/node": "^20.19.26",
-        "@types/pg": "^8.10.9",
         "@types/react": "^18",
         "@types/react-dom": "^18",
         "autoprefixer": "^10.0.1",

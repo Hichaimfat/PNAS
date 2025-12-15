@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { sql } from '@vercel/postgres';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
     try {
@@ -32,23 +34,15 @@ export async function GET(request: NextRequest) {
             paramIndex++;
         }
 
-        // Sorting by priority
-        query += ` ORDER BY priorite_pub DESC NULLS LAST, 
-               CASE 
-                 WHEN priorite_pub = 3 THEN date_derniere_mise_a_jour 
-                 WHEN priorite_pub = 2 THEN completude_profil::text
-                 WHEN priorite_pub = 1 THEN date_derniere_mise_a_jour
-                 ELSE nom_complet
-               END DESC NULLS LAST`;
-
+        query += ` ORDER BY priorite_pub DESC NULLS LAST`;
         query += ` OFFSET $${paramIndex} LIMIT $${paramIndex + 1}`;
         params.push(skip, limit);
 
-        const result = await pool.query(query, params);
+        const result = await sql.query(query, params);
 
         return NextResponse.json(result.rows);
-    } catch (error) {
+    } catch (error: any) {
         console.error('Database error:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
